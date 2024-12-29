@@ -4,7 +4,7 @@ const router = express.Router();
 
 const { authMiddleware, adminAuthMiddleware } = require("./../middlewares/auth-middleware");
 
-router.post("/add-participant", authMiddleware, addParticipant);
+router.post("/add-participant", adminAuthMiddleware, addParticipant);
 router.get("/get-participants", authMiddleware, getParticipants);
 router.put("/edit-participant/:id", adminAuthMiddleware, editParticipant);
 
