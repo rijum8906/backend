@@ -44,3 +44,10 @@ module.exports.editParticipant = asyncHandler(async (req, res) => {
 
   res.status(200).json(new appResponse("Participant updated successfully.", { updatedParticipant }));
 });
+
+// Delete participant 
+module.exports.deleteParticipant = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  
+  const user = await User.deleteOneById(id);
+});
