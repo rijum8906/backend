@@ -1,56 +1,128 @@
 // Dependencies
-const asyncHandler = require("./../utils/async-handler");
+const asyncHandler = require("express-async-handler");
 const appError = require("./../utils/app-error");
 const appResponse = require("./../utils/app-response");
 const jwt = require("jsonwebtoken");
-const { signinSchema, signupSchema } = require("./../../validators/auth");
+const { loginSchema, registerSchema, deviceSchema } = require("./../../validators/auth");
+const { loginUser } = require("./../../services/v1/authService");
+
 
 // Signin
-module.exports.signin = asyncHandler(async (req, res) => {
-  const { error, value } = loginSchema.validate(req.body);
+module.exports.login = asyncHandler(async (req, res) => {
+  const { email, username, password } = req.body;
+  const ipAddress = req.ip;
+  const deviceId = req.deviceId;
+  const userAgent = req.headers['user-agent'];
 
-  // if the data is not corerect
-  if (error) {
-    throw new appError(error, 401);
+  // Validate login credentials
+  const { error: loginError } = loginSchema.validate({ email, username, password });
+  if (loginError) {
+    throw appError(loginError.details[0].message, 400);
   }
 
-  if (appSecret !== process.env.APP_SECRET) {
-    throw new appError("Sorry but app secret is not valid.", 404);
-  }
-
-  const token = jwt.sign({}, process.env.JWT_SECRET, { expiresIn: 3600 });
-
-  res.cookie("token", token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "none",
-    maxAge: 7 * 24 * 60 * 60 * 1000,
+  // Attempt login
+  const result = await loginUserByPass({
+    email,
+    username,
+    password,
+    ipAddress,
+    deviceId,
+    userAgent
   });
-  res.status(200).json(
-    new appResponse("User successfully signed in.", {
-      token,
-    }),
-  );
+
+  res.status(200).json({
+    success: true,
+    data: {
+      token: result.token,
+      user: result.user
+    }
+  });
 });
 
-// Admin Signin
-module.exports.adminSignin = asyncHandler(async (req, res) => {
-  const { username, password } = req.body;
-  if (username !== "admin" || password !== "fuck_nilgiri") {
-    throw new appError("invalid credentials.", 404);
+// Register
+module.exports.register = asyncHandler(async (req, res) => {
+  const { email, username, password, firstName, lastName } = req.body;
+  const ipAddress = req.ip;
+  const deviceId = req.deviceId;
+  const userAgent = req.headers['user-agent'];
+
+  // Validate registration data
+  const { error: registerError } = registerSchema.validate({ 
+    email, 
+    username, 
+    password,
+    firstName,
+    lastName
+  });
+  if (registerError) {
+    throw appError(registerError.details[0].message, 400);
   }
 
-  const token = jwt.sign({ isAdmin: true }, process.env.JWT_SECRET_FOR_ADMIN, { expiresIn: 3600 });
-
-  res.cookie("token", token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "none",
-    maxAge: 7 * 24 * 60 * 60 * 1000,
+  // Attempt registration
+  const result = await registerByPassword({
+    email,
+    username,
+    password,
+    firstName,
+    lastName,
+    ipAddress,
+    deviceId,
+    userAgent
   });
-  res.status(200).json(
-    new appResponse("Admin successfully signed in.", {
-      token,
-    }),
-  );
+
+  res.status(201).json({
+    success: true,
+    data: {
+      token: result.token,
+      user: result.user
+    }
+  });
+}); 
+
+// Google OAuth
+module.exports.googleAuth = asyncHandler(async (req, res) => {
+  const { googleId, email, firstName, lastName } = req.body;
+  const ipAddress = req.ip;
+  const deviceId = req.deviceId;
+  const userAgent = req.headers['user-agent'];
+
+  // Validate OAuth data
+  const { error: oauthError } = googleAuthSchema.validate({
+    googleId,
+    email,
+    firstName,
+    lastName
+  });
+  if (oauthError) {
+    throw appError(oauthError.details[0].message, 400);
+  }
+
+  // Validate device data
+  const { error: deviceError } = deviceSchema.validate({ 
+    ipAddress, 
+    deviceId, 
+    userAgent 
+  });
+  if (deviceError) {
+    throw appError(deviceError.details[0].message, 400);
+  }
+
+  // Process Google authentication
+  const result = await loginOrRegisterByGoogle({
+    googleId,
+    email,
+    firstName,
+    lastName,
+    ipAddress,
+    deviceId,
+    userAgent
+  });
+
+  res.status(200).json({
+    success: true,
+    data: {
+      token: result.token,
+      user: result.user
+    }
+  });
 });

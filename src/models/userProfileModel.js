@@ -1,27 +1,22 @@
 const mongoose = require("mongoose");
 
-// Creating User Profile Schema
 const userProfileSchema = new mongoose.Schema(
   {
+    userAuth: {  // Reference to UserAuth
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "UserAuth",
+      required: true,
+    },
     username: {
       type: String,
       unique: true,
       required: true,
     },
-    avatarURI: {
-      type: String,
-    },
-    bio: {
-      type: String,
-    },
+    avatarURL: String,
+    bio: String,
   },
-  {
-    timestamps: true,
-  },
+  { timestamps: true }
 );
 
-// Creating Ise User Profile Model
-const UserProfile = mongoose.model("UserProfile", UserProfileSchema);
-
-// Exports
+const UserProfile = mongoose.model("UserProfile", userProfileSchema);
 module.exports = UserProfile;

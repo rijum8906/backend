@@ -1,7 +1,7 @@
 const Joi = require("joi");
 
 // Signin Schema
-module.exports.signinSchema = Joi.object({
+module.exports.loginSchema = Joi.object({
   email: Joi.string().email().messages({
     "string.email": "Please provide a valid email address",
   }),
@@ -17,7 +17,7 @@ module.exports.signinSchema = Joi.object({
 }).xor("email", "username"); // Ensures either email or username is provided, but not both
 
 // Signup Schema
-module.exports.signupSchema = Joi.object({
+module.exports.registerSchema = Joi.object({
   firstName: Joi.string().min(2).max(20).required().messages({
     "string.min": "First name must be at least {#limit} characters long",
     "string.max": "First name cannot exceed {#limit} characters",
@@ -42,4 +42,28 @@ module.exports.signupSchema = Joi.object({
     "string.pattern.base": "Password must be alphanumeric and between 8 to 50 characters",
     "any.required": "Password is required",
   }),
+});
+
+// Device Schema 
+module.exports.deviceSchema = Joi.object({
+  ipAddress: Joi.string().required().messages({
+    "string.required": "ip address is not given."
+  }),
+  userAgent: Joi.string().required().messages({
+    "string.required": "user agent is not given."
+  }),
+  deviceId: Joi.string().required().messages({
+    "string.required": "device ID is not given."
+  }),
+  os: Joi.string().optional(),
+  browser: Joi.string().optional(),
+  lastAccessed: Joi.date().default(Date.now)
+});
+
+// Google Auth Schema
+module.exports.googleAuthSchema = Joi.object({
+  googleId: Joi.string().required(),
+  email: Joi.string().email().required(),
+  firstName: Joi.string(),
+  lastName: Joi.string()
 });

@@ -5,6 +5,7 @@ const morgan = require("morgan");
 const helmet = require("helmet");
 const cookieParser = require("cookie-parser");
 const path = require("path");
+const decideIdGenerator = require("./src/middlewares/deviceIdGenerator");
 require("dotenv").config();
 const ENV = process.env;
 
@@ -23,6 +24,7 @@ app.use(express.json());
 app.use(cookieParser());
 app.use(helmet());
 app.use(morgan("dev"));
+app.use(deviceIdGenerator);
 app.use(
   cors({
     origin: "*",
@@ -37,6 +39,7 @@ app.use("/api", require("./src/routes/v1/routes"));
 // Error handler middleware
 app.use((err, req, res, next) => {
   return res.status(err.statusCode || 500).json({
+    success: false,
     message: err.message,
     stack: ENV.NODE_ENV === "development" ? err.stack : undefined,
     error: err.description,
