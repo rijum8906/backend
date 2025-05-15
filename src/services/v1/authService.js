@@ -20,6 +20,8 @@ module.exports.loginUserByPass = async ({ sessionInfo, userInfo }) => {
 
   // Find user by username or email
   const fetchedUser = username ? await UserAuth.findOne({ username }) : await UserAuth.findOne({ email });
+  
+  
 
   // Check if user exists and password is correct
   if (!fetchedUser || !(await fetchedUser.comparePassword(password))) {

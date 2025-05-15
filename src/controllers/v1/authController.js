@@ -22,14 +22,11 @@ module.exports.login = asyncHandler(async (req, res) => {
   }
 
   // Attempt login
-  const result = await loginUserByPass({ sessionInfo, userInfo });
+  const data = await loginUserByPass({ sessionInfo, userInfo });
 
   res.status(200).json({
     success: true,
-    data: {
-      token: result.token,
-      user: result.user,
-    },
+    data,
   });
 });
 

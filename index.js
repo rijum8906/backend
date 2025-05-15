@@ -23,7 +23,7 @@ app.use(express.json());
 app.use(cookieParser());
 app.use(helmet());
 app.use(morgan("dev"));
-//app.use(deviceIdGenerator);
+app.use(deviceIdGenerator);
 app.use(
   cors({
     origin: process.env.FRONTEND_URL || "*",
