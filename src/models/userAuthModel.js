@@ -145,7 +145,11 @@ userAuthSchema.pre("save", async function (next) {
 
 // --- Password Comparison ---
 userAuthSchema.methods.comparePassword = async function (candidatePassword) {
+  if(this.password){
   return await bcrypt.compare(candidatePassword, this.password);
+  } else {
+    return false;
+  }
 };
 
 // --- Generate JWT Token ---
