@@ -1,128 +1,88 @@
 // Dependencies
 const asyncHandler = require("express-async-handler");
-const appError = require("./../utils/app-error");
-const appResponse = require("./../utils/app-response");
+const appError = require("./../../utils/app-error");
+const appResponse = require("./../../utils/app-response");
 const jwt = require("jsonwebtoken");
-const { loginSchema, registerSchema, deviceSchema } = require("./../../validators/auth");
-const { loginUser } = require("./../../services/v1/authService");
-
+const { loginSchema, registerSchema, deviceSchema, googleAuthSchema } = require("./../../validators/auth");
+const { loginUserByPass, loginOrRegisterByGoogle, registerByPassword } = require("./../../services/v1/authService");
 
 // Signin
 module.exports.login = asyncHandler(async (req, res) => {
-  const { email, username, password } = req.body;
+  const userInfo = req.body;
   const ipAddress = req.ip;
   const deviceId = req.deviceId;
-  const userAgent = req.headers['user-agent'];
+  const userAgent = req.headers["user-agent"];
+
+  const sessionInfo = { deviceId, ipAddress, userAgent };
 
   // Validate login credentials
-  const { error: loginError } = loginSchema.validate({ email, username, password });
-  if (loginError) {
-    throw appError(loginError.details[0].message, 400);
+  const { error } = loginSchema.validate(userInfo);
+  if (error) {
+    throw new appError(error.details[0].message, 400);
   }
 
   // Attempt login
-  const result = await loginUserByPass({
-    email,
-    username,
-    password,
-    ipAddress,
-    deviceId,
-    userAgent
-  });
+  const result = await loginUserByPass({ sessionInfo, userInfo });
 
   res.status(200).json({
     success: true,
     data: {
       token: result.token,
-      user: result.user
-    }
+      user: result.user,
+    },
   });
 });
 
 // Register
 module.exports.register = asyncHandler(async (req, res) => {
-  const { email, username, password, firstName, lastName } = req.body;
+  const userInfo = req.body;
   const ipAddress = req.ip;
   const deviceId = req.deviceId;
-  const userAgent = req.headers['user-agent'];
+  const userAgent = req.headers["user-agent"];
+  const sessionInfo = { deviceId, ipAddress, userAgent };
 
   // Validate registration data
-  const { error: registerError } = registerSchema.validate({ 
-    email, 
-    username, 
-    password,
-    firstName,
-    lastName
-  });
+  const { error: registerError } = registerSchema.validate(userInfo);
   if (registerError) {
-    throw appError(registerError.details[0].message, 400);
+    throw new appError(registerError.details[0].message, 400);
   }
 
   // Attempt registration
-  const result = await registerByPassword({
-    email,
-    username,
-    password,
-    firstName,
-    lastName,
-    ipAddress,
-    deviceId,
-    userAgent
-  });
+  const result = await registerByPassword({ userInfo, sessionInfo });
 
   res.status(201).json({
     success: true,
     data: {
       token: result.token,
-      user: result.user
-    }
+      user: result.user,
+    },
   });
-}); 
+});
 
 // Google OAuth
 module.exports.googleAuth = asyncHandler(async (req, res) => {
-  const { googleId, email, firstName, lastName } = req.body;
   const ipAddress = req.ip;
   const deviceId = req.deviceId;
-  const userAgent = req.headers['user-agent'];
+  const userAgent = req.headers["user-agent"];
+  const username = (req.user.email.split("@")[0] + req.user.googleId.substr(0, 5)).substr(0, 15);
+  
+  const userInfo = { username, ...req.user };
+  const sessionInfo = { deviceId, ipAddress, userAgent };
 
   // Validate OAuth data
-  const { error: oauthError } = googleAuthSchema.validate({
-    googleId,
-    email,
-    firstName,
-    lastName
-  });
+  const { error: oauthError } = googleAuthSchema.validate(userInfo);
   if (oauthError) {
-    throw appError(oauthError.details[0].message, 400);
-  }
-
-  // Validate device data
-  const { error: deviceError } = deviceSchema.validate({ 
-    ipAddress, 
-    deviceId, 
-    userAgent 
-  });
-  if (deviceError) {
-    throw appError(deviceError.details[0].message, 400);
+    throw new appError(oauthError.details[0].message, 400);
   }
 
   // Process Google authentication
-  const result = await loginOrRegisterByGoogle({
-    googleId,
-    email,
-    firstName,
-    lastName,
-    ipAddress,
-    deviceId,
-    userAgent
-  });
+  const result = await loginOrRegisterByGoogle({ sessionInfo, userInfo });
 
   res.status(200).json({
     success: true,
     data: {
       token: result.token,
-      user: result.user
-    }
+      user: result.user,
+    },
   });
 });

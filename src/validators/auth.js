@@ -10,8 +10,10 @@ module.exports.loginSchema = Joi.object({
     "string.min": "Username must be at least {#limit} characters long",
     "string.max": "Username cannot exceed {#limit} characters",
   }),
-  password: Joi.string().pattern(new RegExp("^[a-zA-Z0-9]{8,50}$")).required().messages({
-    "string.pattern.base": "Password must be alphanumeric and between 8 to 50 characters",
+  password: Joi.string().min(8).max(40).required().messages({
+    "string.alphanum": "Password must only contain alphanumeric characters",
+    "string.min": "Password must be at least {#limit} characters long",
+    "string.max": "Password cannot exceed {#limit} characters",
     "any.required": "Password is required",
   }),
 }).xor("email", "username"); // Ensures either email or username is provided, but not both
@@ -38,26 +40,28 @@ module.exports.registerSchema = Joi.object({
     "string.max": "Username cannot exceed {#limit} characters",
     "any.required": "Username is required",
   }),
-  password: Joi.string().pattern(new RegExp("^[a-zA-Z0-9]{8,50}$")).required().messages({
-    "string.pattern.base": "Password must be alphanumeric and between 8 to 50 characters",
+  password: Joi.string().min(8).max(40).required().messages({
+    "string.alphanum": "Password must only contain alphanumeric characters",
+    "string.min": "Password must be at least {#limit} characters long",
+    "string.max": "Password cannot exceed {#limit} characters",
     "any.required": "Password is required",
   }),
 });
 
-// Device Schema 
+// Device Schema
 module.exports.deviceSchema = Joi.object({
   ipAddress: Joi.string().required().messages({
-    "string.required": "ip address is not given."
+    "string.required": "ip address is not given.",
   }),
   userAgent: Joi.string().required().messages({
-    "string.required": "user agent is not given."
+    "string.required": "user agent is not given.",
   }),
   deviceId: Joi.string().required().messages({
-    "string.required": "device ID is not given."
+    "string.required": "device ID is not given.",
   }),
   os: Joi.string().optional(),
   browser: Joi.string().optional(),
-  lastAccessed: Joi.date().default(Date.now)
+  lastAccessed: Joi.date().default(Date.now),
 });
 
 // Google Auth Schema
@@ -65,5 +69,15 @@ module.exports.googleAuthSchema = Joi.object({
   googleId: Joi.string().required(),
   email: Joi.string().email().required(),
   firstName: Joi.string(),
-  lastName: Joi.string()
+  lastName: Joi.string(),
+});
+
+// Google Auth Schema
+module.exports.googleAuthSchema = Joi.object({
+  firstName: Joi.string().min(2).max(20).required(),
+  lastName: Joi.string().min(2).max(20).required(),
+  email: Joi.string().email().required(),
+  username: Joi.string().alphanum().min(3).max(15).required(),
+  avatarURL: Joi.string().required(),
+  googleId: Joi.required(),
 });

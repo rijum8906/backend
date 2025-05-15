@@ -1,8 +1,10 @@
 const express = require("express");
-const { login, adminLogin } = require("./../../controllers/v1/auth.controller");
+const { login, register, googleAuth } = require("./../../controllers/v1/authController");
+const googleTokenVerificationMiddleware = require("./../../middlewares/googleAuthVerification");
 const router = express.Router();
 
-router.post("/login", signin);
-router.post("/admin-login", adminLogin);
+router.post("/login", login);
+router.post("/register", register);
+router.post("/continue-with-google", googleTokenVerificationMiddleware, googleAuth);
 
 module.exports = router;

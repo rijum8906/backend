@@ -1,4 +1,4 @@
-const crypto = require('crypto');
+const crypto = require("crypto");
 
 /**
  * Generates a persistent device ID from request data.
@@ -6,23 +6,22 @@ const crypto = require('crypto');
  * @returns {string} SHA-256 hash of the device fingerprint.
  */
 function generateDeviceId(req, res, next) {
-    // 1. Extract stable identifiers from the request
-    const fingerprintParts = [
-        req.headers['user-agent'],      // Browser/OS
-        req.headers['accept-language'], // Language settings
-        req.headers['sec-ch-ua'],       // Browser brand (Chrome, Edge)
-        req.headers['sec-ch-ua-platform'] || req.headers['x-operating-system'], // OS
-        req.ip.replace(/\.|:/g, ''),    // Sanitized IP (v4/v6)
-        req.headers['x-client-hints']   // If available (requires opt-in)
-    ].filter(Boolean).join('|');
+  // 1. Extract stable identifiers from the request
+  const fingerprintParts = [
+    req.headers["user-agent"], // Browser/OS
+    req.headers["accept-language"], // Language settings
+    req.headers["sec-ch-ua"], // Browser brand (Chrome, Edge)
+    req.headers["sec-ch-ua-platform"] || req.headers["x-operating-system"], // OS
+    req.ip.replace(/\.|:/g, ""), // Sanitized IP (v4/v6)
+    req.headers["x-client-hints"], // If available (requires opt-in)
+  ]
+    .filter(Boolean)
+    .join("|");
 
-    // 2. Hash the fingerprint to ensure consistency
-    req.deviceId = crypto
-        .createHash('sha256')
-        .update(fingerprintParts)
-        .digest('hex');
-        
-    next();
+  // 2. Hash the fingerprint to ensure consistency
+  req.deviceId = crypto.createHash("sha256").update(fingerprintParts).digest("hex");
+
+  next();
 }
 
-export default generateDeviceId;
+module.exports = generateDeviceId;

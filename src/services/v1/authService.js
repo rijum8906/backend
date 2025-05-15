@@ -1,10 +1,11 @@
-const UserAuth = require("./../../models/user.model");
+const UserAuth = require("./../../models/userAuthModel");
 const UserLoginHistory = require("./../../models/userLoginHistoryModel");
+const UserProfile = require("./../../models/userProfileModel");
 const appError = require("./../../utils/app-error");
-const { formatLoginData } = require("./../../utils/authUtils");
+const { loginToDatabase } = require("./../../utils/authUtils");
 
 /**
- * Login a user with correct credentials 
+ * Login a user with correct credentials
  * @param {Object} params - Login parameters
  * @param {String} [params.email] - User's email
  * @param {String} [params.username] - User's username
@@ -12,51 +13,28 @@ const { formatLoginData } = require("./../../utils/authUtils");
  * @param {String} params.ipAddress - IP address of the device
  * @param {String} params.deviceId - Device identifier (typo fixed from devideId)
  * @param {String} params.userAgent - User agent string
- * @returns {Object} the jwt token and some user details 
+ * @returns {Object} the jwt token and some user details
  */
-module.exports.loginUserByPass = async ({email, username, password, ipAddress, deviceId, userAgent}) => {
-    // Find user by username or email
-    const fetchedUser = username 
-        ? await UserAuth.findOne({username}) 
-        : await UserAuth.findOne({email});
-    
-    // Check if user exists and password is correct
-    if(!fetchedUser || !(await fetchedUser.comparePassword(password))) {
-        throw appError("Invalid credentials", 404);
-    }
-    
-    // increase the login attempt 
-    fetchedUser.incrementLoginAttempts();
-    
-    // Generate token
-    const token = fetchedUser.generateAuthToken()
-    
-    // Add session
-    fetchedUser.addSession({
-        token,
-        ipAddress, 
-        deviceId, 
-        userAgent, 
-        method: "password",
-    });
-    
-    // Create login history record
-    const newLoginData = new UserLoginHistory({
-        userId: fetchedUser._id,
-        token, 
-        ipAddress, 
-        deviceId, 
-        userAgent,
-        method: "password"
-    });
-    
-    await fetchedUser.save();
-    await newLoginData.save();
-    
-    return {
-        token,
-        user: formatLoginData(fetchedUser)
-    };
+module.exports.loginUserByPass = async ({ sessionInfo, userInfo }) => {
+  const { username, password, email } = userInfo;
+
+  // Find user by username or email
+  const fetchedUser = username ? await UserAuth.findOne({ username }) : await UserAuth.findOne({ email });
+
+  // Check if user exists and password is correct
+  if (!fetchedUser || !(await fetchedUser.comparePassword(password))) {
+    throw new appError("Invalid credentials", 404);
+  }
+
+  // if the account is already locked
+  if (fetchedUser.isLocked) {
+    throw new appError("Too many times login.", 429);
+  }
+
+  // Save the login information to database
+  const responseData = await loginToDatabase(user, sessionInfo, "password");
+
+  return responseData;
 };
 
 /**
@@ -70,71 +48,39 @@ module.exports.loginUserByPass = async ({email, username, password, ipAddress, d
  * @param {String} params.ipAddress - IP address of the device
  * @param {String} params.deviceId - Device identifier
  * @param {String} params.userAgent - User agent string
- * @returns {Object} the jwt token and some user details 
+ * @returns {Object} the jwt token and some user details
  */
-module.exports.registerByPassword = async ({
+module.exports.registerByPassword = async ({ sessionInfo, userInfo }) => {
+  const { firstName, lastName, username, email, password } = userInfo;
+
+  // Check if email or username already exists
+  const existingUser = await UserAuth.findOne({
+    $or: [{ email }, { username }],
+  });
+  if (existingUser) {
+    if (existingUser.email === email) {
+      throw new appError("Email already in use", 409);
+    } else {
+      throw new appError("Username already taken", 409);
+    }
+  }
+
+  // Create new user and profile and save them
+  const newUserProfile = new UserProfile({ firstName, lastName });
+  await newUserProfile.save();
+  const newUser = new UserAuth({
     email,
     username,
     password,
-    firstName,
-    lastName,
-    ipAddress,
-    deviceId,
-    userAgent
-}) => {
-    // Check if email or username already exists
-    const existingUser = await UserAuth.findOne({
-        $or: [{ email }, { username }]
-    });
-    
-    if (existingUser) {
-        if (existingUser.email === email) {
-            throw appError("Email already in use", 409);
-        } else {
-            throw appError("Username already taken", 409);
-        }
-    }
-    
-    // Create new user
-    const newUser = new UserAuth({
-        email,
-        username,
-        password,
-        firstName,
-        lastName,
-        registrationMethod: "password"
-    });
-    
-    // Generate token
-    const token = newUser.generateAuthToken();
-    
-    // Add session
-    newUser.addSession({
-        token,
-        ipAddress, 
-        deviceId, 
-        userAgent, 
-        method: "password",
-    });
-    
-    // Create login history record
-    const newLoginData = new UserLoginHistory({
-        userId: newUser._id,
-        token,
-        ipAddress,
-        deviceId,
-        userAgent,
-        method: "password",
-    });
-    
-    // Save everything
-    await newUser.save();
-    await newLoginData.save();
-    
-    return {
-        token,
-        user: formatLoginData(newUser)
-    };
+    registrationMethod: "password",
+    profileInfo: newUserProfile._id,
+  });
+  await newUser.save();
+
+  // Save the login information to database
+  const responseData = await loginToDatabase(newUser, sessionInfo, "password");
+
+  return responseData;
 };
 
 /**
@@ -148,100 +94,42 @@ module.exports.registerByPassword = async ({
  * @param {String} params.userAgent - User agent string
  * @returns {Object} JWT token and user details
  */
-module.exports.loginOrRegisterByGoogle = async ({
-  firstName,
-  lastName,
-  googleId,
-  email,
-  username,
-  ipAddress,
-  deviceId,
-  userAgent
-}) => {
+module.exports.loginOrRegisterByGoogle = async ({ userInfo, sessionInfo }) => {
+  const { firstName, lastName, googleId, email, username, avatarURL } = userInfo;
   // Try to find existing user by Google ID or email
-  const fetchedUser = await UserAuth.findOne({"socialLogins.google.id":googleId, email});
+  const fetchedUser = await UserAuth.findOne({ email, "socialLogins.google.id": googleId });
+  const isUserExists = await UserAuth.exists({ email });
 
-  // Case 1: Existing Google-linked user
+  // Case 1: User already exists with this email and google Id
   if (fetchedUser) {
-        // increase the login attempt 
-    fetchedUser.incrementLoginAttempts();
-    
-    // Generate token
-    const token = fetchedUser.generateAuthToken()
-    
-    // Add session
-    fetchedUser.addSession({
-        token,
-        ipAddress, 
-        deviceId, 
-        userAgent, 
-        method: "google",
-    });
-    
-    // Create login history record
-    const newLoginData = new UserLoginHistory({
-        userId: fetchedUser._id,
-        token, 
-        ipAddress, 
-        deviceId, 
-        userAgent,
-        method: "google"
-    });
-    
-    await fetchedUser.save();
-    await newLoginData.save();
-    
-    return {
-        token,
-        user: formatLoginData(fetchedUser)
-    };
+    // Save the login information to database
+    const responseData = await loginToDatabase(fetchedUser, sessionInfo, "google");
+
+    return responseData;
+  } else if (isUserExists) {
+    // Case 2: If email is registered but not linked with google
+    throw new appError("Email already in use.", 409);
   } else {
-  // Case 2: New registration
-      // Create new user
+    // Case 3: New registration
+    // Create new user
+    const newUserProfile = new UserProfile({ firstName, lastName, avatarURL });
+    await newUserProfile.save();
     const newUser = new UserAuth({
-        email,
-        username,
-         password,
-        firstName,
-        lastName,
-        registrationMethod: "google"
+      email,
+      username,
+      registrationMethod: "google",
+      isEmailVerified: true,
+      profileInfo: newUserProfile._id,
     });
     newUser.socialLogins.google = {
       id: googleId,
-      email
-    }
-    
-    // Generate token
-    const token = newUser.generateAuthToken();
-    
-    // Add session
-    newUser.addSession({
-        token,
-        ipAddress, 
-        deviceId, 
-        userAgent, 
-        method: "google",
-    });
-    
-    // Create login history record
-    const newLoginData = new UserLoginHistory({
-        userId: newUser._id,
-        token,
-        ipAddress,
-        deviceId,
-        userAgent,
-        method: "password",
-    });
-    
-    // Save everything
-    await newUser.save();
-    await newLoginData.save();
-    
-    return {
-        token,
-        user: formatLoginData(newUser)
+      email,
     };
-  }
+    await newUser.save();
 
-  
+    // Save the login information to database
+    const responseData = await loginToDatabase(newUser, sessionInfo, "google");
+
+    return responseData;
+  }
 };
