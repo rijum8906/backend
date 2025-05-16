@@ -70,7 +70,8 @@ module.exports.loginToDatabase = async (user, sessionInfo, method) => {
 
   // Rerturn token with some user information
   return {
-    token: accessToken,
+    accessToken,
+    refreshToken
   };
 };
 

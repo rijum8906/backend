@@ -31,7 +31,7 @@ app.use(deviceIdGenerator);
 app.use(
   cors({
     origin: process.env.FRONTEND_URL || "http://localhost:5173",
-    credentials: process.env.FRONTEND_URL ? true : false,
+    credentials: process.env.FRONTEND_URL ? true : false
   }),
 );
 

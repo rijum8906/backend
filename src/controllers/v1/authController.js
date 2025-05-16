@@ -18,11 +18,18 @@ module.exports.login = asyncHandler(async (req, res) => {
   }
 
   // Attempt login
-  const data = await loginUserByPass({ sessionInfo, userInfo });
+  const { accessToken, refreshToken } = await loginUserByPass({ sessionInfo, userInfo });
 
   res.status(200).json({
     success: true,
-    data,
+    data:{
+      token: accessToken
+    }
+  });
+  res.cookie("token", refreshToken, {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === "production" ? true : false ,
+  sameSite: "lax"
   });
 });
 
@@ -38,13 +45,20 @@ module.exports.register = asyncHandler(async (req, res) => {
   }
 
   // Attempt registration
-  const data = await registerByPassword({ userInfo, sessionInfo });
+  const { accessToken, refreshToken } = await registerByPassword({ sessionInfo, userInfo });
 
-  res.status(201).json({
+  res.status(200).json({
     success: true,
-    data
+    data:{
+      token: accessToken
+    }
   });
-});
+  res.cookie("token", refreshToken, {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === "production" ? true : false ,
+  sameSite: "lax"
+  });
+  });
 
 // Google OAuth
 module.exports.googleAuth = asyncHandler(async (req, res) => {
@@ -60,11 +74,18 @@ module.exports.googleAuth = asyncHandler(async (req, res) => {
   }
 
   // Process Google authentication
-  const data = await loginOrRegisterByGoogle({ sessionInfo, userInfo });
+  const { accessToken, refreshToken } = await loginOrRegisterByGoogle({ sessionInfo, userInfo });
 
   res.status(200).json({
     success: true,
-    data
+    data:{
+      token: accessToken
+    }
+  });
+  res.cookie("token", refreshToken, {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === "production" ? true : false ,
+  sameSite: "lax"
   });
 });
 
@@ -86,4 +107,4 @@ module.exports.logout = asyncHandler(async (req, res)=>{
   res.status(200).json({
     status
   })
-});
+})
