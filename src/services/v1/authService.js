@@ -3,6 +3,7 @@ const UserLoginHistory = require("./../../models/userLoginHistoryModel");
 const UserProfile = require("./../../models/userProfileModel");
 const appError = require("./../../utils/app-error");
 const { loginToDatabase } = require("./../../utils/authUtils");
+const redisClient = require("./../../configs/redisConfig")
 
 /**
  * Login a user with correct credentials
@@ -133,3 +134,26 @@ module.exports.loginOrRegisterByGoogle = async ({ userInfo, sessionInfo }) => {
     return responseData;
   }
 };
+
+
+module.exports.logoutUser = async ({ deviceId, userId }) =>{
+  // Check if the user exists 
+  const user = await UserAuth.findById(userId);
+  if(!user){
+    throw new appError("Cannot logout a undefined user",401);
+  }
+  
+  const index = user.activeSessions.findIndex(session => session.deviceId === deviceId);
+  
+  if(index === -1){
+    throw new appError("Your session is not stored.",401);
+  }
+  
+  user.activeSessions.splice(index, 1);
+  await  user.save();
+  
+  // Remove from the Redis 
+  redisClient.del(user._id.toString())
+  
+  return true;
+}

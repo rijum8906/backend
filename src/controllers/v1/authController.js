@@ -4,7 +4,7 @@ const appError = require("./../../utils/app-error");
 const appResponse = require("./../../utils/app-response");
 const jwt = require("jsonwebtoken");
 const { loginSchema, registerSchema, deviceSchema, googleAuthSchema } = require("./../../validators/auth");
-const { loginUserByPass, loginOrRegisterByGoogle, registerByPassword } = require("./../../services/v1/authService");
+const { loginUserByPass, loginOrRegisterByGoogle, registerByPassword, logoutUser } = require("./../../services/v1/authService");
 
 // Signin
 module.exports.login = asyncHandler(async (req, res) => {
@@ -12,8 +12,8 @@ module.exports.login = asyncHandler(async (req, res) => {
   const sessionInfo = req.session;
 
   // Validate login credentials
-  const { error } = loginSchema.validate(userInfo);
-  if (error) {
+  const { error: loginError } = loginSchema.validate(userInfo);
+  if (loginError) {
     throw new appError(error.details[0].message, 400);
   }
 
@@ -38,14 +38,11 @@ module.exports.register = asyncHandler(async (req, res) => {
   }
 
   // Attempt registration
-  const result = await registerByPassword({ userInfo, sessionInfo });
+  const data = await registerByPassword({ userInfo, sessionInfo });
 
   res.status(201).json({
     success: true,
-    data: {
-      token: result.token,
-      user: result.user,
-    },
+    data
   });
 });
 
@@ -63,23 +60,30 @@ module.exports.googleAuth = asyncHandler(async (req, res) => {
   }
 
   // Process Google authentication
-  const result = await loginOrRegisterByGoogle({ sessionInfo, userInfo });
+  const data = await loginOrRegisterByGoogle({ sessionInfo, userInfo });
 
   res.status(200).json({
     success: true,
-    data: {
-      token: result.token,
-      user: result.user,
-    },
+    data
   });
 });
 
-// Request Check
+// Request Check 
 module.exports.checkReq = asyncHandler(async (req, res) => {
   res.status(200).json({
     status: true,
     data: {
-      message: "Verification successful.",
-    },
-  });
+      message: "Verification successful."
+    }
+  })
+});
+
+// Logout
+module.exports.logout = asyncHandler(async (req, res)=>{
+  const { deviceId } = req.session;
+  const userId = req.user.sub;
+  const status = await logoutUser({ deviceId, userId });
+  res.status(200).json({
+    status
+  })
 });

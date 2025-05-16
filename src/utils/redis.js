@@ -5,6 +5,6 @@ module.exports.get = async (keyName) => {
 };
 
 module.exports.compareKey = async (key, value) => {
-  const keyVal = await redisClient.get(keyName);
+  const keyVal = await redisClient.get(key);
   return value === keyVal;
 };

@@ -4,7 +4,7 @@ const appError = require("./../utils/app-error");
 const { compareKey } = require("./../utils/redis");
 
 module.exports.accessTokenVerificationMiddleware = asyncHandler(async (req, res, next) => {
-  const accessToken = req.cookies.refreshToken || req.headers.authorization?.replace("Bearer ", "");
+  const accessToken = req.cookies.accessToken || req.headers.authorization?.replace("Bearer ", "");
 
   if (!accessToken) {
     throw new appError("Token is not provided", 401);
@@ -12,20 +12,20 @@ module.exports.accessTokenVerificationMiddleware = asyncHandler(async (req, res,
 
   try {
     // Verify the Token
-    const decoded = await jwt.verify(refreshToken, process.env.JWT_SECRET_KEY);
+    const decoded = await jwt.verify(accessToken, process.env.JWT_SECRET_KEY);
     if (!decoded) {
       throw new appError("Invalid token", 401);
     }
 
     // Check if it is stored in Redis
-    const isAvailableInRedis = compareKey(decoded.sub, accessToken);
+    const isAvailableInRedis = await compareKey(decoded.sub, accessToken);
     if (!isAvailableInRedis) {
-      throw new appError("Token doesn't matches.", 401);
+      throw new appError("Token didn't match.", 401);
     }
 
     req.user = { ...decoded, accessToken };
     next();
   } catch (err) {
-    throw new appError("Token verification failed", 401);
+    throw new appError("Token Verification Failed.", 401);
   }
 });

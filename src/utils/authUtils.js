@@ -47,7 +47,7 @@ module.exports.loginToDatabase = async (user, sessionInfo, method) => {
   const accessToken = generateToken({user:userInfo});
   
   // Save Access Token to Redis
-  await redisClient.setEx(user._id.toString(), 60*15,accessToken, (err, reply)=>{
+  await redisClient.setEx(user._id.toString(), 60*15 ,accessToken, (err, reply)=>{
     if(err) throw new Error("Something went wrong. Please try again.");
   });
 

@@ -25,7 +25,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(cookieParser());
 app.use(helmet());
-if (process.env.NODE_ENV !== "production") app.use(morgan("dev"));
+//if (process.env.NODE_ENV !== "production") app.use(morgan("dev"));
 app.use(sessionInfoGenerator);
 app.use(deviceIdGenerator);
 app.use(
