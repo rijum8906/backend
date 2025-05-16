@@ -17,6 +17,13 @@ const userProfileSchema = new mongoose.Schema(
       minlength: 2,
       maxlength: 50,
     },
+    location: {
+      type: String,
+    },
+    ipAddress: {
+      type: String,
+      required: true
+    },
     avatarURL: String,
     bio: String,
   },

@@ -68,7 +68,7 @@ module.exports.registerByPassword = async ({ sessionInfo, userInfo }) => {
   }
 
   // Create new user and profile and save them
-  const newUserProfile = new UserProfile({ firstName, lastName });
+  const newUserProfile = new UserProfile({ firstName, lastName, ipAddress:sessionInfo.ipAddress });
   await newUserProfile.save();
   const newUser = new UserAuth({
     email,
@@ -114,7 +114,7 @@ module.exports.loginOrRegisterByGoogle = async ({ userInfo, sessionInfo }) => {
   } else {
     // Case 3: New registration
     // Create new user
-    const newUserProfile = new UserProfile({ firstName, lastName, avatarURL });
+    const newUserProfile = new UserProfile({ firstName, lastName, avatarURL, ipAddress:sessionInfo.ipAddress });
     await newUserProfile.save();
     const newUser = new UserAuth({
       email,

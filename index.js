@@ -22,11 +22,11 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(cookieParser());
 app.use(helmet());
-app.use(morgan("dev"));
+if(process.env.NODE_ENV === "production") app.use(morgan("dev"));
 app.use(deviceIdGenerator);
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL || "*",
+    origin: process.env.FRONTEND_URL || "http://localhost:5173",
     credentials: process.env.FRONTEND_URL ? true : false,
   }),
 );
