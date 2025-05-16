@@ -145,24 +145,11 @@ userAuthSchema.pre("save", async function (next) {
 
 // --- Password Comparison ---
 userAuthSchema.methods.comparePassword = async function (candidatePassword) {
-  if(this.password){
-  return await bcrypt.compare(candidatePassword, this.password);
+  if (this.password) {
+    return await bcrypt.compare(candidatePassword, this.password);
   } else {
     return false;
   }
-};
-
-// --- Generate JWT Token ---
-userAuthSchema.methods.generateAuthToken = function () {
-  return jwt.sign(
-    {
-      id: this._id,
-      email: this.email,
-      role: this.role,
-    },
-    process.env.JWT_SECRET,
-    { expiresIn: process.env.JWT_EXPIRES_IN || "1d" },
-  );
 };
 
 // --- Password Reset Token ---

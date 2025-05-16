@@ -20,8 +20,6 @@ module.exports.loginUserByPass = async ({ sessionInfo, userInfo }) => {
 
   // Find user by username or email
   const fetchedUser = username ? await UserAuth.findOne({ username }) : await UserAuth.findOne({ email });
-  
-  
 
   // Check if user exists and password is correct
   if (!fetchedUser || !(await fetchedUser.comparePassword(password))) {
@@ -68,7 +66,7 @@ module.exports.registerByPassword = async ({ sessionInfo, userInfo }) => {
   }
 
   // Create new user and profile and save them
-  const newUserProfile = new UserProfile({ firstName, lastName, ipAddress:sessionInfo.ipAddress });
+  const newUserProfile = new UserProfile({ firstName, lastName, ipAddress: sessionInfo.ipAddress });
   await newUserProfile.save();
   const newUser = new UserAuth({
     email,
@@ -114,7 +112,7 @@ module.exports.loginOrRegisterByGoogle = async ({ userInfo, sessionInfo }) => {
   } else {
     // Case 3: New registration
     // Create new user
-    const newUserProfile = new UserProfile({ firstName, lastName, avatarURL, ipAddress:sessionInfo.ipAddress });
+    const newUserProfile = new UserProfile({ firstName, lastName, avatarURL, ipAddress: sessionInfo.ipAddress });
     await newUserProfile.save();
     const newUser = new UserAuth({
       email,

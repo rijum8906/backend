@@ -9,11 +9,7 @@ const { loginUserByPass, loginOrRegisterByGoogle, registerByPassword } = require
 // Signin
 module.exports.login = asyncHandler(async (req, res) => {
   const userInfo = req.body;
-  const ipAddress = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
-  const deviceId = req.deviceId;
-  const userAgent = req.headers["user-agent"];
-
-  const sessionInfo = { deviceId, ipAddress, userAgent };
+  const sessionInfo = req.session;
 
   // Validate login credentials
   const { error } = loginSchema.validate(userInfo);
@@ -33,10 +29,7 @@ module.exports.login = asyncHandler(async (req, res) => {
 // Register
 module.exports.register = asyncHandler(async (req, res) => {
   const userInfo = req.body;
-  const ipAddress = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
-  const deviceId = req.deviceId;
-  const userAgent = req.headers["user-agent"];
-  const sessionInfo = { deviceId, ipAddress, userAgent };
+  const sessionInfo = req.session;
 
   // Validate registration data
   const { error: registerError } = registerSchema.validate(userInfo);
@@ -58,13 +51,10 @@ module.exports.register = asyncHandler(async (req, res) => {
 
 // Google OAuth
 module.exports.googleAuth = asyncHandler(async (req, res) => {
-  const ipAddress = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
-  const deviceId = req.deviceId;
-  const userAgent = req.headers["user-agent"];
+  const sessionInfo = req.session;
   const username = (req.user.email.split("@")[0] + req.user.googleId.substr(0, 5)).substr(0, 15);
-  
+
   const userInfo = { username, ...req.user };
-  const sessionInfo = { deviceId, ipAddress, userAgent };
 
   // Validate OAuth data
   const { error: oauthError } = googleAuthSchema.validate(userInfo);
@@ -80,6 +70,16 @@ module.exports.googleAuth = asyncHandler(async (req, res) => {
     data: {
       token: result.token,
       user: result.user,
+    },
+  });
+});
+
+// Request Check
+module.exports.checkReq = asyncHandler(async (req, res) => {
+  res.status(200).json({
+    status: true,
+    data: {
+      message: "Verification successful.",
     },
   });
 });

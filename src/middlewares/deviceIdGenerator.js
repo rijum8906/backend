@@ -19,7 +19,10 @@ function generateDeviceId(req, res, next) {
     .join("|");
 
   // 2. Hash the fingerprint to ensure consistency
-  req.deviceId = crypto.createHash("sha256").update(fingerprintParts).digest("hex");
+  req.session = {
+    ...(req.session || {}),
+    deviceId: crypto.createHash("sha256").update(fingerprintParts).digest("hex"),
+  };
 
   next();
 }

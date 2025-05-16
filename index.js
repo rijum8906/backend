@@ -6,13 +6,16 @@ const helmet = require("helmet");
 const cookieParser = require("cookie-parser");
 const path = require("path");
 const deviceIdGenerator = require("./src/middlewares/deviceIdGenerator");
+const sessionInfoGenerator = require("./src/middlewares/sessionInfoGenerator");
 require("dotenv").config();
 
 // Dependency Configs
 const connectDB = require("./src/configs/db.config");
+const redisClient = require("./src/configs/redisConfig");
 
-// Connecting to MongoDB
+// Connecting to MongoDB & Redis
 connectDB();
+redisClient.connect();
 
 // Creating App
 var app = express();
@@ -22,7 +25,8 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(cookieParser());
 app.use(helmet());
-if(process.env.NODE_ENV === "production") app.use(morgan("dev"));
+if (process.env.NODE_ENV !== "production") app.use(morgan("dev"));
+app.use(sessionInfoGenerator);
 app.use(deviceIdGenerator);
 app.use(
   cors({

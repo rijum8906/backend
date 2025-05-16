@@ -22,7 +22,7 @@ const userProfileSchema = new mongoose.Schema(
     },
     ipAddress: {
       type: String,
-      required: true
+      required: true,
     },
     avatarURL: String,
     bio: String,

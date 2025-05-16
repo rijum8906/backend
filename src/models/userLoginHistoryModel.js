@@ -12,14 +12,15 @@ const loginHistorySchema = new mongoose.Schema(
     deviceId: String,
     method: { type: String, enum: ["password", "google", "github", "facebook"] },
     status: { type: String, enum: ["success", "failed", "locked"] },
-    createdAt: {  // Explicit field for TTL (required)
+    createdAt: {
+      // Explicit field for TTL (required)
       type: Date,
       default: Date.now,
-    }
+    },
   },
   {
-    timestamps: true,  // Fixed typo from 'timestamp' to 'timestamps'
-  }
+    timestamps: true, // Fixed typo from 'timestamp' to 'timestamps'
+  },
 );
 
 // Add TTL index - records will expire after 90 days (adjust as needed)
